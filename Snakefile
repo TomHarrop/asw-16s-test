@@ -30,7 +30,6 @@ rule target:
         dynamic('output/matched_merged/{individual}_r1.fq'),
         dynamic('output/matched_merged/{individual}_r2.fq')
 
-
 # merged the antisense and sense reads
 rule merge_sense_antisense:
     input:
@@ -51,8 +50,8 @@ rule compress_renamed_antisense:
         r1 = 'output/matched_antisense_renamed/{individual}_r1.fq',
         r2 = 'output/matched_antisense_renamed/{individual}_r2.fq'
     output:
-        r1 = 'output/matched_antisense_renamed/{individual}_r1.fq.gz',
-        r2 = 'output/matched_antisense_renamed/{individual}_r2.fq.gz'
+        r1 = temp('output/matched_antisense_renamed/{individual}_r1.fq.gz'),
+        r2 = temp('output/matched_antisense_renamed/{individual}_r2.fq.gz')
     shell:
         'cat {input.r1} | gzip -9 > {output.r1} ;'
         'cat {input.r2} | gzip -9 > {output.r2}'
@@ -62,8 +61,8 @@ rule compress_sense:
         r1 = 'output/matched_sense/{individual}_r1.fq',
         r2 = 'output/matched_sense/{individual}_r2.fq'
     output:
-        r1 = 'output/matched_sense/{individual}_r1.fq.gz',
-        r2 = 'output/matched_sense/{individual}_r2.fq.gz'
+        r1 = temp('output/matched_sense/{individual}_r1.fq.gz'),
+        r2 = temp('output/matched_sense/{individual}_r2.fq.gz')
     shell:
         'cat {input.r1} | gzip -9 > {output.r1} ;'
         'cat {input.r2} | gzip -9 > {output.r2}'
@@ -74,8 +73,8 @@ rule rename_antisense_reads:
         r1 = 'output/matched_antisense/{individual}_r1.fq',
         r2 = 'output/matched_antisense/{individual}_r2.fq',
     output:
-        r1 = 'output/matched_antisense_renamed/{individual}_r1.fq',
-        r2 = 'output/matched_antisense_renamed/{individual}_r2.fq'
+        r1 = temp('output/matched_antisense_renamed/{individual}_r1.fq'),
+        r2 = temp('output/matched_antisense_renamed/{individual}_r2.fq')
     threads:
         1
     script:
@@ -87,8 +86,8 @@ rule match_sense_primers:
         r1 = 'output/matched_head/{individual}_r1.fq',
         r2 = 'output/matched_head/{individual}_r2.fq'
     output:
-        r1 = 'output/matched_sense/{individual}_r1.fq',
-        r2 = 'output/matched_sense/{individual}_r2.fq'
+        r1 = temp('output/matched_sense/{individual}_r1.fq'),
+        r2 = temp('output/matched_sense/{individual}_r2.fq')
     params:
         r1d = 'output/matched_sense/{individual}_r1.fq.discards',
         r2d = 'output/matched_sense/{individual}_r2.fq.discards'
@@ -116,8 +115,8 @@ rule match_antisense_primers:
         r1 = 'output/matched_head/{individual}_r1.fq',
         r2 = 'output/matched_head/{individual}_r2.fq'
     output:
-        r1 = 'output/matched_antisense/{individual}_r1.fq',
-        r2 = 'output/matched_antisense/{individual}_r2.fq'
+        r1 = temp('output/matched_antisense/{individual}_r1.fq'),
+        r2 = temp('output/matched_antisense/{individual}_r2.fq')
     params:
         r1d = 'output/matched_antisense/{individual}_r1.fq.discards',
         r2d = 'output/matched_antisense/{individual}_r2.fq.discards'
@@ -146,8 +145,8 @@ rule match_head:
         r1 = 'output/demuxed_merged/{individual}_r1.fq',
         r2 = 'output/demuxed_merged/{individual}_r2.fq'
     output:
-        r1 = 'output/matched_head/{individual}_r1.fq',
-        r2 = 'output/matched_head/{individual}_r2.fq'
+        r1 = temp('output/matched_head/{individual}_r1.fq'),
+        r2 = temp('output/matched_head/{individual}_r2.fq')
     params:
         r1d = 'output/matched_head/{individual}_r1.fq.discards',
         r2d = 'output/matched_head/{individual}_r2.fq.discards'
@@ -178,8 +177,8 @@ rule merge_demuxed_reads:
         r1_r2 = 'output/cutadapt_demux_r1/{individual}_r2.fq.gz',
         r2_r2 = 'output/cutadapt_demux_r2/{individual}_r2.fq.gz'
     output:
-        r1 = 'output/demuxed_merged/{individual}_r1.fq',
-        r2 = 'output/demuxed_merged/{individual}_r2.fq'
+        r1 = temp('output/demuxed_merged/{individual}_r1.fq'),
+        r2 = temp('output/demuxed_merged/{individual}_r2.fq')
     threads:
         1
     script:
