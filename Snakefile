@@ -27,10 +27,24 @@ r2 = 'data/DDP02116-W/TH1_2.fq.gz'
 
 rule target:
     input:
-        dynamic('output/cutadapt_demux_r1/{individual}_r1.fq.gz'),
-        dynamic('output/cutadapt_demux_r1/{individual}_r2.fq.gz'),
-        dynamic('output/cutadapt_demux_r2/{individual}_r1.fq.gz'),
-        dynamic('output/cutadapt_demux_r2/{individual}_r2.fq.gz')
+        dynamic('output/demuxed_merged/{individual}_r1.fq'),
+        dynamic('output/demuxed_merged/{individual}_r2.fq')
+
+
+# merge and sort cudatapt output
+rule merge_demuxed_reads:
+    input:
+        r1_r1 = 'output/cutadapt_demux_r1/{individual}_r1.fq.gz',
+        r2_r1 = 'output/cutadapt_demux_r2/{individual}_r1.fq.gz',
+        r1_r2 = 'output/cutadapt_demux_r1/{individual}_r2.fq.gz',
+        r2_r2 = 'output/cutadapt_demux_r2/{individual}_r2.fq.gz'
+    output:
+        r1 = 'output/demuxed_merged/{individual}_r1.fq',
+        r2 = 'output/demuxed_merged/{individual}_r2.fq'
+    threads:
+        1
+    script:
+        'src/get_unique_reads.py'
 
 
 # demux with cutadapt

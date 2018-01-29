@@ -3,30 +3,51 @@
 from Bio import SeqIO
 import gzip
 
+
+#############
+# FUNCTIONS #
+#############
+
+def get_unique_reads(file_1, file_2):
+    with gzip.open(file_1, 'rt') as handle:
+        fastq = [x for x in SeqIO.parse(handle, 'fastq-sanger')]
+    fastq_names = [x.name for x in fastq]
+    with gzip.open(file_2, 'rt') as handle:
+        for x in SeqIO.parse(handle, 'fastq-sanger'):
+            if x.name not in fastq_names:
+                fastq.append(x)
+    return SeqIO.to_dict(fastq)
+
 ###########
 # GLOBALS #
 ###########
 
-# r1_file = 'output/cutadapt_demux_r1/ASW13_1.fq.gz'
-# r2_file = 'output/cutadapt_demux_r2/ASW13_1.fq.gz'
-# names_file = 'test.txt'
+# r1_r1 = 'output/cutadapt_demux_r1/ASW13_1_r1.fq.gz'
+# r1_r2 = 'output/cutadapt_demux_r1/ASW13_1_r2.fq.gz'
+# r2_r1 = 'output/cutadapt_demux_r2/ASW13_1_r1.fq.gz'
+# r2_r2 = 'output/cutadapt_demux_r2/ASW13_1_r2.fq.gz'
+# r1_out = 'test_r1.fastq'
+# r2_out = 'test_r2.fastq'
 
-r1_file = snakemake.input['r1']
-r2_file = snakemake.input['r2']
-names_file = snakemake.output['kept_reads']
+r1_r1 = snakemake.input['r1_r1']
+r2_r1 = snakemake.input['r2_r1']
+r1_r2 = snakemake.input['r1_r2']
+r2_r2 = snakemake.input['r2_r2']
+r1_out = snakemake.output['r1']
+r2_out = snakemake.output['r2']
 
-# read the record ids
-with gzip.open(r1_file, 'rt') as handle:
-    fastq = SeqIO.parse(handle, 'fastq-sanger')
-    r1_names = set(x.name for x in fastq)
+########
+# MAIN #
+########
 
-with gzip.open(r2_file, 'rt') as handle:
-    fastq = SeqIO.parse(handle, 'fastq-sanger')
-    r2_names = set(x.name for x in fastq)
+r1_unique = get_unique_reads(r1_r1, r2_r1)
+r2_unique = get_unique_reads(r1_r2, r2_r2)
 
-# join the sets
-all_names = '\n'.join(set(r1_names.union(r2_names)))
+key_order = sorted(r1_unique.keys())
 
-# write to file
-with open(names_file, 'wt') as f:
-    f.writelines(all_names)
+SeqIO.write((r1_unique[x] for x in key_order),
+    r1_out,
+    'fastq-sanger')
+SeqIO.write((r2_unique[x] for x in key_order),
+    r2_out,
+    'fastq-sanger')
