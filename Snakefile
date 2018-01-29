@@ -12,8 +12,8 @@
 
 # primers
 head = "GCTATGCGCGAGCTGC"
-primer_f = "GCTATGCGCGAGCTGCCMGGATTAGATACCCKGG"     # HEAD-799F-mod3
-primer_r = "GCTATGCGCGAGCTGCACGGGCGGTGTGTRC"        # HEAD-1392R
+primer_f = "CMGGATTAGATACCCKGG"     # 799F-mod3 18nt
+primer_r = "ACGGGCGGTGTGTRC"        # 1392R
 
 # files and folders
 barcodes_file = 'data/bc_5nt_with_spacer.fasta'
@@ -27,9 +27,148 @@ r2 = 'data/DDP02116-W/TH1_2.fq.gz'
 
 rule target:
     input:
-        dynamic('output/demuxed_merged/{individual}_r1.fq'),
-        dynamic('output/demuxed_merged/{individual}_r2.fq')
+        dynamic('output/matched_merged/{individual}_r1.fq'),
+        dynamic('output/matched_merged/{individual}_r2.fq')
 
+
+# merged the antisense and sense reads
+rule merge_sense_antisense:
+    input:
+        r1_r1 = 'output/matched_sense/{individual}_r1.fq.gz',
+        r2_r1 = 'output/matched_antisense_renamed/{individual}_r1.fq.gz',
+        r1_r2 = 'output/matched_sense/{individual}_r2.fq.gz',
+        r2_r2 = 'output/matched_antisense_renamed/{individual}_r1.fq.gz'
+    output:
+        r1 = 'output/matched_merged/{individual}_r1.fq',
+        r2 = 'output/matched_merged/{individual}_r2.fq'
+    threads:
+        1
+    script:
+        'src/get_unique_reads.py'
+
+rule compress_renamed_antisense:
+    input:
+        r1 = 'output/matched_antisense_renamed/{individual}_r1.fq',
+        r2 = 'output/matched_antisense_renamed/{individual}_r2.fq'
+    output:
+        r1 = 'output/matched_antisense_renamed/{individual}_r1.fq.gz',
+        r2 = 'output/matched_antisense_renamed/{individual}_r2.fq.gz'
+    shell:
+        'cat {input.r1} | gzip -9 > {output.r1} ;'
+        'cat {input.r2} | gzip -9 > {output.r2}'
+
+rule compress_sense:
+    input:
+        r1 = 'output/matched_sense/{individual}_r1.fq',
+        r2 = 'output/matched_sense/{individual}_r2.fq'
+    output:
+        r1 = 'output/matched_sense/{individual}_r1.fq.gz',
+        r2 = 'output/matched_sense/{individual}_r2.fq.gz'
+    shell:
+        'cat {input.r1} | gzip -9 > {output.r1} ;'
+        'cat {input.r2} | gzip -9 > {output.r2}'
+
+# reverse complement the antisense matches
+rule rename_antisense_reads:
+    input:
+        r1 = 'output/matched_antisense/{individual}_r1.fq',
+        r2 = 'output/matched_antisense/{individual}_r2.fq',
+    output:
+        r1 = 'output/matched_antisense_renamed/{individual}_r1.fq',
+        r2 = 'output/matched_antisense_renamed/{individual}_r2.fq'
+    threads:
+        1
+    script:
+        'src/rename_antisense_reads.py'
+
+# match the primers
+rule match_sense_primers:
+    input:
+        r1 = 'output/matched_head/{individual}_r1.fq',
+        r2 = 'output/matched_head/{individual}_r2.fq'
+    output:
+        r1 = 'output/matched_sense/{individual}_r1.fq',
+        r2 = 'output/matched_sense/{individual}_r2.fq'
+    params:
+        r1d = 'output/matched_sense/{individual}_r1.fq.discards',
+        r2d = 'output/matched_sense/{individual}_r2.fq.discards'
+    threads:
+        1
+    log:
+        'output/logs/cutadapt-match-sense_{individual}.log'
+    shell:
+        'cutadapt '
+        '-g 799F={primer_f} '
+        '-G 1392R={primer_r} '
+        '--minimum-length=207 '
+        '--error-rate=0 '
+        '--no-indels '
+        '--pair-filter=any '
+        '-o {output.r1} '
+        '-p {output.r2} '
+        '--untrimmed-output={params.r1d} '
+        '--untrimmed-paired-output={params.r2d} '
+        '{input.r1} {input.r2} '
+        '&> {log}'
+
+rule match_antisense_primers:
+    input:
+        r1 = 'output/matched_head/{individual}_r1.fq',
+        r2 = 'output/matched_head/{individual}_r2.fq'
+    output:
+        r1 = 'output/matched_antisense/{individual}_r1.fq',
+        r2 = 'output/matched_antisense/{individual}_r2.fq'
+    params:
+        r1d = 'output/matched_antisense/{individual}_r1.fq.discards',
+        r2d = 'output/matched_antisense/{individual}_r2.fq.discards'
+    threads:
+        1
+    log:
+        'output/logs/cutadapt-match-antisense_{individual}.log'
+    shell:
+        'cutadapt '
+        '-g 1392R={primer_r} '
+        '-G 799F={primer_f} '        
+        '--minimum-length=207 '
+        '--error-rate=0 '
+        '--no-indels '
+        '--pair-filter=any '
+        '-o {output.r1} '
+        '-p {output.r2} '
+        '--untrimmed-output={params.r1d} '
+        '--untrimmed-paired-output={params.r2d} '
+        '{input.r1} {input.r2} '
+        '&> {log}'
+
+# match the HEAD sequence
+rule match_head:
+    input:
+        r1 = 'output/demuxed_merged/{individual}_r1.fq',
+        r2 = 'output/demuxed_merged/{individual}_r2.fq'
+    output:
+        r1 = 'output/matched_head/{individual}_r1.fq',
+        r2 = 'output/matched_head/{individual}_r2.fq'
+    params:
+        r1d = 'output/matched_head/{individual}_r1.fq.discards',
+        r2d = 'output/matched_head/{individual}_r2.fq.discards'
+    threads:
+        1
+    log:
+        'output/logs/cutadapt-match-head_{individual}.log'
+    shell:
+        'cutadapt '
+        '-g HEAD={head} '
+        '-G HEAD={head} '
+        '--minimum-length=225 '
+        '--error-rate=0 '
+        '--no-indels '
+        '--pair-filter=any '
+        '-o {output.r1} '
+        '-p {output.r2} '
+        '--untrimmed-output={params.r1d} '
+        '--untrimmed-paired-output={params.r2d} '
+        '{input.r1} {input.r2} '
+        '&> {log}'
 
 # merge and sort cudatapt output
 rule merge_demuxed_reads:
@@ -65,7 +204,7 @@ rule demux_r1:
         '-g file:{input.key} '
         '--error-rate=0 '
         '--no-indels '
-        '--no-trim '                # ONLY FOR TESTING
+        '--no-trim '
         '--max-n=0 '
         '--pair-filter=any '
         '-o output/cutadapt_demux_r1/{{name}}_r1.fq.gz '

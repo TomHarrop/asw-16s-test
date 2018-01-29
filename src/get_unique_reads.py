@@ -22,13 +22,6 @@ def get_unique_reads(file_1, file_2):
 # GLOBALS #
 ###########
 
-# r1_r1 = 'output/cutadapt_demux_r1/ASW13_1_r1.fq.gz'
-# r1_r2 = 'output/cutadapt_demux_r1/ASW13_1_r2.fq.gz'
-# r2_r1 = 'output/cutadapt_demux_r2/ASW13_1_r1.fq.gz'
-# r2_r2 = 'output/cutadapt_demux_r2/ASW13_1_r2.fq.gz'
-# r1_out = 'test_r1.fastq'
-# r2_out = 'test_r2.fastq'
-
 r1_r1 = snakemake.input['r1_r1']
 r2_r1 = snakemake.input['r2_r1']
 r1_r2 = snakemake.input['r1_r2']
