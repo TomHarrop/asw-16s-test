@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from Bio import SeqIO
-import gzip
 
 
 #############
@@ -9,13 +8,11 @@ import gzip
 #############
 
 def get_unique_reads(file_1, file_2):
-    with gzip.open(file_1, 'rt') as handle:
-        fastq = [x for x in SeqIO.parse(handle, 'fastq-sanger')]
+    fastq = [x for x in SeqIO.parse(file_1, 'fastq-sanger')]
     fastq_names = [x.name for x in fastq]
-    with gzip.open(file_2, 'rt') as handle:
-        for x in SeqIO.parse(handle, 'fastq-sanger'):
-            if x.name not in fastq_names:
-                fastq.append(x)
+    for x in SeqIO.parse(file_2, 'fastq-sanger'):
+        if x.name not in fastq_names:
+            fastq.append(x)
     return SeqIO.to_dict(fastq)
 
 ###########

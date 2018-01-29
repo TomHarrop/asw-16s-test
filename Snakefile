@@ -33,10 +33,10 @@ rule target:
 # merged the antisense and sense reads
 rule merge_sense_antisense:
     input:
-        r1_r1 = 'output/matched_sense/{individual}_r1.fq.gz',
-        r2_r1 = 'output/matched_antisense_renamed/{individual}_r1.fq.gz',
-        r1_r2 = 'output/matched_sense/{individual}_r2.fq.gz',
-        r2_r2 = 'output/matched_antisense_renamed/{individual}_r1.fq.gz'
+        r1_r1 = 'output/matched_sense/{individual}_r1.fq',
+        r2_r1 = 'output/matched_antisense_renamed/{individual}_r1.fq',
+        r1_r2 = 'output/matched_sense/{individual}_r2.fq',
+        r2_r2 = 'output/matched_antisense_renamed/{individual}_r1.fq'
     output:
         r1 = 'output/matched_merged/{individual}_r1.fq',
         r2 = 'output/matched_merged/{individual}_r2.fq'
@@ -44,28 +44,6 @@ rule merge_sense_antisense:
         1
     script:
         'src/get_unique_reads.py'
-
-rule compress_renamed_antisense:
-    input:
-        r1 = 'output/matched_antisense_renamed/{individual}_r1.fq',
-        r2 = 'output/matched_antisense_renamed/{individual}_r2.fq'
-    output:
-        r1 = temp('output/matched_antisense_renamed/{individual}_r1.fq.gz'),
-        r2 = temp('output/matched_antisense_renamed/{individual}_r2.fq.gz')
-    shell:
-        'cat {input.r1} | gzip -9 > {output.r1} ;'
-        'cat {input.r2} | gzip -9 > {output.r2}'
-
-rule compress_sense:
-    input:
-        r1 = 'output/matched_sense/{individual}_r1.fq',
-        r2 = 'output/matched_sense/{individual}_r2.fq'
-    output:
-        r1 = temp('output/matched_sense/{individual}_r1.fq.gz'),
-        r2 = temp('output/matched_sense/{individual}_r2.fq.gz')
-    shell:
-        'cat {input.r1} | gzip -9 > {output.r1} ;'
-        'cat {input.r2} | gzip -9 > {output.r2}'
 
 # reverse complement the antisense matches
 rule rename_antisense_reads:
@@ -172,10 +150,10 @@ rule match_head:
 # merge and sort cudatapt output
 rule merge_demuxed_reads:
     input:
-        r1_r1 = 'output/cutadapt_demux_r1/{individual}_r1.fq.gz',
-        r2_r1 = 'output/cutadapt_demux_r2/{individual}_r1.fq.gz',
-        r1_r2 = 'output/cutadapt_demux_r1/{individual}_r2.fq.gz',
-        r2_r2 = 'output/cutadapt_demux_r2/{individual}_r2.fq.gz'
+        r1_r1 = 'output/cutadapt_demux_r1/{individual}_r1.fq',
+        r2_r1 = 'output/cutadapt_demux_r2/{individual}_r1.fq',
+        r1_r2 = 'output/cutadapt_demux_r1/{individual}_r2.fq',
+        r2_r2 = 'output/cutadapt_demux_r2/{individual}_r2.fq'
     output:
         r1 = temp('output/demuxed_merged/{individual}_r1.fq'),
         r2 = temp('output/demuxed_merged/{individual}_r2.fq')
@@ -189,11 +167,11 @@ rule merge_demuxed_reads:
 rule demux_r1:
     input:
         key = 'output/config_files/cutadapt_barcodes.fasta',
-        r1 = r1,
-        r2 = r2
+        r1 = 'output/raw_reads/r1.fq',
+        r2 = 'output/raw_reads/r2.fq'
     output:
-        dynamic('output/cutadapt_demux_r1/{individual}_r1.fq.gz'),
-        dynamic('output/cutadapt_demux_r1/{individual}_r2.fq.gz')
+        dynamic('output/cutadapt_demux_r1/{individual}_r1.fq'),
+        dynamic('output/cutadapt_demux_r1/{individual}_r2.fq')
     log:
         'output/logs/cutadapt_demux_r1.log'
     threads:
@@ -206,23 +184,23 @@ rule demux_r1:
         '--no-trim '
         '--max-n=0 '
         '--pair-filter=any '
-        '-o output/cutadapt_demux_r1/{{name}}_r1.fq.gz '
-        '-p output/cutadapt_demux_r1/{{name}}_r2.fq.gz '
+        '-o output/cutadapt_demux_r1/{{name}}_r1.fq '
+        '-p output/cutadapt_demux_r1/{{name}}_r2.fq '
         '--untrimmed-output='
-        'output/cutadapt_demux_r1/untrimmed_r1.fq.gz.discards '
+        'output/cutadapt_demux_r1/untrimmed_r1.fq.discards '
         '--untrimmed-paired-output='
-        'output/cutadapt_demux_r1/untrimmed_r2.fq.gz.discards '
+        'output/cutadapt_demux_r1/untrimmed_r2.fq.discards '
         '{input.r1} {input.r2} '
         '&> {log}'
 
 rule demux_r2:
     input:
         key = 'output/config_files/cutadapt_barcodes.fasta',
-        r1 = r1,
-        r2 = r2
+        r1 = 'output/raw_reads/r1.fq',
+        r2 = 'output/raw_reads/r2.fq'
     output:
-        dynamic('output/cutadapt_demux_r2/{individual}_r1.fq.gz'),
-        dynamic('output/cutadapt_demux_r2/{individual}_r2.fq.gz')
+        dynamic('output/cutadapt_demux_r2/{individual}_r1.fq'),
+        dynamic('output/cutadapt_demux_r2/{individual}_r2.fq')
     log:
         'output/logs/cutadapt_demux_r2.log'
     threads:
@@ -235,14 +213,26 @@ rule demux_r2:
         '--no-trim '                # ONLY FOR TESTING
         '--max-n=0 '
         '--pair-filter=any '
-        '-o output/cutadapt_demux_r2/{{name}}_r2.fq.gz '
-        '-p output/cutadapt_demux_r2/{{name}}_r1.fq.gz '
+        '-o output/cutadapt_demux_r2/{{name}}_r2.fq '
+        '-p output/cutadapt_demux_r2/{{name}}_r1.fq '
         '--untrimmed-output='
-        'output/cutadapt_demux_r2/untrimmed_r2.fq.gz.discards '
+        'output/cutadapt_demux_r2/untrimmed_r2.fq.discards '
         '--untrimmed-paired-output='
-        'output/cutadapt_demux_r2/untrimmed_r1.fq.gz.discards '
+        'output/cutadapt_demux_r2/untrimmed_r1.fq.discards '
         '{input.r2} {input.r1} '
         '&> {log}'
+
+
+# expand the reads to avoid pigz
+rule zcat:
+    input:
+        'data/DDP02116-W/TH1_{r}.fq.gz'
+    output:
+        'output/raw_reads/r{r}.fq'
+    threads:
+        1
+    shell:
+        'zcat {input} > {output}'
 
 
 # generate a key file for demuxing
