@@ -27,8 +27,60 @@ r2 = 'data/DDP02116-W/TH1_2.fq.gz'
 
 rule target:
     input:
-        dynamic('output/matched_merged/{individual}_r1.fq'),
-        dynamic('output/matched_merged/{individual}_r2.fq')
+        'output/joined_reads/all.fasta'
+
+# join read files
+rule join_reads:
+    input:
+        dynamic('output/renamed_contigs/{individual}.fa')
+    output:
+        'output/joined_reads/all.fasta'
+    shell:
+        'cat {input} > {output}'
+
+# make contigs and rename reads
+rule contig_and_rename:
+    input:
+        r1 = 'output/truncated/{individual}_r1.fq',
+        r2 = 'output/truncated/{individual}_r2.fq'        
+    output:
+        fa = 'output/renamed_contigs/{individual}.fa',
+    params:
+        individual = '{individual}'
+    threads:
+        1 
+    script:
+        'src/contig_and_rename.py'
+    
+
+# truncate the reads to 200b
+rule truncate:
+    input:
+        r1 = 'output/matched_merged/{individual}_r1.fq',
+        r2 = 'output/matched_merged/{individual}_r2.fq'
+    output:
+        r1 = 'output/truncated/{individual}_r1.fq',
+        r2 = 'output/truncated/{individual}_r2.fq'
+    threads:
+        1
+    log:
+        'output/logs/truncate_{individual}.log'
+    shell:
+        'bbduk.sh '
+        'in={input.r1} '
+        'in2={input.r2} '
+        'maxns=0 '
+        'literal='
+        'AAAAAAAAAA,'
+        'CCCCCCCCCC,'
+        'GGGGGGGGGG,'
+        'TTTTTTTTTT '
+        'maskmiddle=f '
+        'out={output.r1} '
+        'out2={output.r2} '
+        'forcetrimright=209 '
+        'minlength=210 '
+        '2> {log}'
 
 # merged the antisense and sense reads
 rule merge_sense_antisense:
