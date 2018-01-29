@@ -228,7 +228,7 @@ rule zcat:
     input:
         'data/DDP02116-W/TH1_{r}.fq.gz'
     output:
-        'output/raw_reads/r{r}.fq'
+        temp('output/raw_reads/r{r}.fq')
     threads:
         1
     shell:
