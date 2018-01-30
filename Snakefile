@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-
+import pathlib
 
 #############
 # FUNCTIONS #
@@ -20,6 +20,9 @@ barcodes_file = 'data/bc_5nt_with_spacer.fasta'
 key_file = 'data/barcodes.csv'
 r1 = 'data/DDP02116-W/TH1_1.fq.gz'
 r2 = 'data/DDP02116-W/TH1_2.fq.gz'
+silva_align = pathlib.Path('data/silva/silva.seed_v128.align').resolve()
+silva_tax = pathlib.Path('data/silva/silva.seed_v128.tax').resolve()
+
 
 #########
 # RULES #
@@ -27,7 +30,133 @@ r2 = 'data/DDP02116-W/TH1_2.fq.gz'
 
 rule target:
     input:
+        'output/annotate_otus/keptotus.seed_v128.wang.taxonomy'
+
+# annotate OTUs
+rule annotate_otus:
+    input:
+        fasta = 'output/gutfilter/keptotus.fasta'
+    output:
+        fasta = temp('output/annotate_otus/keptotus.fasta'),
+        tax = 'output/annotate_otus/keptotus.seed_v128.wang.taxonomy'
+    params:
+        wd = 'output/annotate_otus',
+        align = silva_align,
+        tax = silva_tax
+    log:
+        'output/logs/mothur_annotate-otus.log'
+    threads:
+        16
+    shell:
+        'cp {input.fasta} {output.fasta} ; '
+        'bash -c \''
+        'cd {params.wd} || exit 1 ; '
+        'mothur "'
+        '#classify.seqs(fasta=keptotus.fasta, '
+        'template={params.align}, '
+        'taxonomy={params.tax}, '
+        'processors={threads})" '
+        '\' &> {log}'
+
+# run gutfilter and extract reads
+rule gutfilter_reads:
+    input:
+        kept_otus = 'output/gutfilter/kept_otus.txt',
+        fasta = 'output/swarm_reformatted/precluster.fasta'
+    output:
+        'output/gutfilter/keptotus.fasta'
+    log:
+        'output/logs/filterbyname.log'
+    threads:
+        1
+    shell:
+        'filterbyname.sh '
+        'in={input.fasta} '
+        'out={output} '
+        'names={input.kept_otus} '
+        'include=t '
+        '2> {log}'
+
+rule gutfilter:
+    input:
+        precluster_names = 'output/swarm_reformatted/long_table.tab'
+    output:
+        kept_otus = 'output/gutfilter/kept_otus.txt',
+        count_table = 'output/gutfilter/count_table.txt',
+        abundance_table = 'output/gutfilter/abundance_table.txt',
+        filter_file = 'output/gutfilter/filter_table.txt'
+    threads:
+        1
+    script:
+        'src/gut_filter.R'
+
+# reformat for gutfilter / R
+rule reformat_swarm_output:
+    input:
+        mothur_names = 'output/dereplicate/all.names',
+        swarm_results = 'output/swarm/all.unique.swarm',
+        dereplicated_fasta = 'output/dereplicate/all.unique.fasta'
+    output:
+        names = 'output/swarm_reformatted/precluster.names',
+        fasta = 'output/swarm_reformatted/precluster.fasta',
+        long_table = 'output/swarm_reformatted/long_table.tab'
+    threads:
+        1
+    script:
+        'src/reformat_swarm_output.py'
+
+# Cluster using swarm:
+rule swarm:
+    input:
+        'output/swarm/all.unique.fasta'
+    output:
+        'output/swarm/all.unique.swarm'
+    threads:
+        8
+    log:
+        'output/logs/swarm.log'
+    shell:
+        'swarm '
+        '-t {threads} '
+        '--fastidious '
+        '-l {log} '
+        '-o {output} '
+        '{input}'
+
+# Reformat mothur’s output for swarm:
+rule reformat_for_swarm:
+    input:
+        fa = 'output/dereplicate/all.unique.fasta',
+    output:
+        fa = 'output/swarm/all.unique.fasta',
+    params:
+        names = 'output/dereplicate/all.names'
+    threads:
+        1
+    script:
+        'src/reheader_for_swarm.py'
+
+# Dereplicate using mothur
+rule dereplicate:
+    input:
         'output/joined_reads/all.fasta'
+    output:
+        fa = temp('output/dereplicate/all.fasta'),
+        derep = 'output/dereplicate/all.unique.fasta',
+        names = 'output/dereplicate/all.names'
+    threads:
+        1
+    params:
+        wd = 'output/dereplicate'
+    log:
+        'output/logs/dereplicate.log'
+    shell:
+        'cp {input} {output.fa} ; '
+        'bash -c \''
+        'cd {params.wd} || exit 1 ; '
+        'mothur "'
+        '#unique.seqs(fasta=all.fasta)" '
+        '\' &> {log}'
 
 # join read files
 rule join_reads:
@@ -45,13 +174,13 @@ rule contig_and_rename:
         r2 = 'output/truncated/{individual}_r2.fq'        
     output:
         fa = 'output/renamed_contigs/{individual}.fa',
+        key = 'output/renamed_contigs/{individual}_readkey.txt'
     params:
         individual = '{individual}'
     threads:
         1 
     script:
         'src/contig_and_rename.py'
-    
 
 # truncate the reads to 200b
 rule truncate:

@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
+import csv
 from Bio import Seq
 from Bio import SeqIO
 from Bio import SeqRecord
-
 
 
 #############
 # FUNCTIONS #
 #############
 
-
 # secrecord constructor
 def create_contig(read_id, fwd_reads, rev_reads):
-    my_spacer = Seq.Seq("N" * 205)
+    # my_spacer = Seq.Seq("N" * 205)
+    my_spacer = Seq.Seq('')
     my_fwd_read = fwd_reads[read_id].seq
     my_rev_read = rev_reads[read_id].reverse_complement().seq
     return my_fwd_read + my_spacer + my_rev_read
@@ -27,6 +27,7 @@ r1 = snakemake.input['r1']
 r2 = snakemake.input['r2']
 individual = snakemake.params['individual']
 out_file = snakemake.output['fa']
+out_key = snakemake.output['key']
 
 ########
 # MAIN #
@@ -51,4 +52,6 @@ for rec_id in id_to_key.keys():
 
 # write output
 SeqIO.write(output_records, out_file, 'fasta')
-
+with open(out_key, 'wt') as f:
+    my_writer = csv.writer(f)
+    my_writer.writerows(id_to_key.items())
