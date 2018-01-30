@@ -32,12 +32,21 @@ rule target:
     input:
         'output/annotate_otus/keptotus.seed_v128.wang.taxonomy'
 
-# annotate OTUs
-rule annotate_otus:
+# put Ns in the OTUs and annotate with mothur
+rule insert_ns:
     input:
         fasta = 'output/gutfilter/keptotus.fasta'
     output:
-        fasta = temp('output/annotate_otus/keptotus.fasta'),
+        fasta = 'output/annotate_otus/keptotus.fasta'
+    threads:
+        1
+    script:
+        'src/split_otus_for_mothur.py'  
+
+rule annotate_otus:
+    input:
+        fasta = 'output/annotate_otus/keptotus.fasta'
+    output:
         tax = 'output/annotate_otus/keptotus.seed_v128.wang.taxonomy'
     params:
         wd = 'output/annotate_otus',
@@ -48,7 +57,6 @@ rule annotate_otus:
     threads:
         16
     shell:
-        'cp {input.fasta} {output.fasta} ; '
         'bash -c \''
         'cd {params.wd} || exit 1 ; '
         'mothur "'
