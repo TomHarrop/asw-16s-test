@@ -30,26 +30,16 @@ silva_tax = pathlib.Path('data/silva/silva.seed_v128.tax').resolve()
 
 rule target:
     input:
-        'output/annotate_otus/keptotus.seed_v128.wang.taxonomy'
+        'output/091_annotate_otus/keptotus.seed_v128.wang.taxonomy'
 
-# put Ns in the OTUs and annotate with mothur
-rule insert_ns:
-    input:
-        fasta = 'output/gutfilter/keptotus.fasta'
-    output:
-        fasta = 'output/annotate_otus/keptotus.fasta'
-    threads:
-        1
-    script:
-        'src/split_otus_for_mothur.py'  
-
+# 09 put Ns in the OTUs and annotate with mothur
 rule annotate_otus:
     input:
-        fasta = 'output/annotate_otus/keptotus.fasta'
+        fasta = 'output/091_annotate_otus/keptotus.fasta'
     output:
-        tax = 'output/annotate_otus/keptotus.seed_v128.wang.taxonomy'
+        tax = 'output/091_annotate_otus/keptotus.seed_v128.wang.taxonomy'
     params:
-        wd = 'output/annotate_otus',
+        wd = 'output/091_annotate_otus',
         align = silva_align,
         tax = silva_tax
     log:
@@ -66,13 +56,23 @@ rule annotate_otus:
         'processors={threads})" '
         '\' &> {log}'
 
-# run gutfilter and extract reads
+rule insert_ns:
+    input:
+        fasta = 'output/082_gutfilter/keptotus.fasta'
+    output:
+        fasta = 'output/091_annotate_otus/keptotus.fasta'
+    threads:
+        1
+    script:
+        'src/split_otus_for_mothur.py'  
+
+# 082 run gutfilter and extract reads
 rule gutfilter_reads:
     input:
-        kept_otus = 'output/gutfilter/kept_otus.txt',
-        fasta = 'output/swarm_reformatted/precluster.fasta'
+        kept_otus = 'output/082_gutfilter/kept_otus.txt',
+        fasta = 'output/081_swarm_reformatted/precluster.fasta'
     output:
-        'output/gutfilter/keptotus.fasta'
+        'output/082_gutfilter/keptotus.fasta'
     log:
         'output/logs/filterbyname.log'
     threads:
@@ -87,38 +87,38 @@ rule gutfilter_reads:
 
 rule gutfilter:
     input:
-        precluster_names = 'output/swarm_reformatted/long_table.tab'
+        precluster_names = 'output/081_swarm_reformatted/long_table.tab'
     output:
-        kept_otus = 'output/gutfilter/kept_otus.txt',
-        count_table = 'output/gutfilter/count_table.txt',
-        abundance_table = 'output/gutfilter/abundance_table.txt',
-        filter_file = 'output/gutfilter/filter_table.txt'
+        kept_otus = 'output/082_gutfilter/kept_otus.txt',
+        count_table = 'output/082_gutfilter/count_table.txt',
+        abundance_table = 'output/082_gutfilter/abundance_table.txt',
+        filter_file = 'output/082_gutfilter/filter_table.txt'
     threads:
         1
     script:
         'src/gut_filter.R'
 
-# reformat for gutfilter / R
+# 081 reformat for gutfilter / R
 rule reformat_swarm_output:
     input:
-        mothur_names = 'output/dereplicate/all.names',
-        swarm_results = 'output/swarm/all.unique.swarm',
-        dereplicated_fasta = 'output/dereplicate/all.unique.fasta'
+        mothur_names = 'output/06_dereplicate/all.names',
+        swarm_results = 'output/07_swarm/all.unique.swarm',
+        dereplicated_fasta = 'output/06_dereplicate/all.unique.fasta'
     output:
-        names = 'output/swarm_reformatted/precluster.names',
-        fasta = 'output/swarm_reformatted/precluster.fasta',
-        long_table = 'output/swarm_reformatted/long_table.tab'
+        names = 'output/081_swarm_reformatted/precluster.names',
+        fasta = 'output/081_swarm_reformatted/precluster.fasta',
+        long_table = 'output/081_swarm_reformatted/long_table.tab'
     threads:
         1
     script:
         'src/reformat_swarm_output.py'
 
-# Cluster using swarm:
+# 072 Cluster using swarm:
 rule swarm:
     input:
-        'output/swarm/all.unique.fasta'
+        'output/07_swarm/all.unique.fasta'
     output:
-        'output/swarm/all.unique.swarm'
+        'output/07_swarm/all.unique.swarm'
     threads:
         8
     log:
@@ -131,31 +131,31 @@ rule swarm:
         '-o {output} '
         '{input}'
 
-# Reformat mothur’s output for swarm:
+# 071 Reformat mothur’s output for swarm:
 rule reformat_for_swarm:
     input:
-        fa = 'output/dereplicate/all.unique.fasta',
+        fa = 'output/06_dereplicate/all.unique.fasta',
     output:
-        fa = 'output/swarm/all.unique.fasta',
+        fa = 'output/07_swarm/all.unique.fasta',
     params:
-        names = 'output/dereplicate/all.names'
+        names = 'output/06_dereplicate/all.names'
     threads:
         1
     script:
         'src/reheader_for_swarm.py'
 
-# Dereplicate using mothur
+# 06 Dereplicate using mothur
 rule dereplicate:
     input:
-        'output/joined_reads/all.fasta'
+        'output/054_joined_reads/all.fasta'
     output:
-        fa = temp('output/dereplicate/all.fasta'),
-        derep = 'output/dereplicate/all.unique.fasta',
-        names = 'output/dereplicate/all.names'
+        fa = temp('output/06_dereplicate/all.fasta'),
+        derep = 'output/06_dereplicate/all.unique.fasta',
+        names = 'output/06_dereplicate/all.names'
     threads:
         1
     params:
-        wd = 'output/dereplicate'
+        wd = 'output/06_dereplicate'
     log:
         'output/logs/dereplicate.log'
     shell:
@@ -166,23 +166,23 @@ rule dereplicate:
         '#unique.seqs(fasta=all.fasta)" '
         '\' &> {log}'
 
-# join read files
+# 054 join read files
 rule join_reads:
     input:
-        dynamic('output/renamed_contigs/{individual}.fa')
+        dynamic('output/053_renamed_contigs/{individual}.fa')
     output:
-        'output/joined_reads/all.fasta'
+        'output/054_joined_reads/all.fasta'
     shell:
         'cat {input} > {output}'
 
-# make contigs and rename reads
+# 053 make contigs and rename reads
 rule contig_and_rename:
     input:
-        r1 = 'output/truncated/{individual}_r1.fq',
-        r2 = 'output/truncated/{individual}_r2.fq'        
+        r1 = 'output/052_truncated/{individual}_r1.fq',
+        r2 = 'output/052_truncated/{individual}_r2.fq'        
     output:
-        fa = 'output/renamed_contigs/{individual}.fa',
-        key = 'output/renamed_contigs/{individual}_readkey.txt'
+        fa = 'output/053_renamed_contigs/{individual}.fa',
+        key = 'output/053_renamed_contigs/{individual}_readkey.txt'
     params:
         individual = '{individual}'
     threads:
@@ -190,14 +190,14 @@ rule contig_and_rename:
     script:
         'src/contig_and_rename.py'
 
-# truncate the reads to 200b
+# 05b truncate the reads to 200b
 rule truncate:
     input:
-        r1 = 'output/matched_merged/{individual}_r1.fq',
-        r2 = 'output/matched_merged/{individual}_r2.fq'
+        r1 = 'output/051_matched_merged/{individual}_r1.fq',
+        r2 = 'output/051_matched_merged/{individual}_r2.fq'
     output:
-        r1 = 'output/truncated/{individual}_r1.fq',
-        r2 = 'output/truncated/{individual}_r2.fq'
+        r1 = 'output/052_truncated/{individual}_r1.fq',
+        r2 = 'output/052_truncated/{individual}_r2.fq'
     threads:
         1
     log:
@@ -219,45 +219,45 @@ rule truncate:
         'minlength=210 '
         '2> {log}'
 
-# merged the antisense and sense reads
+# 05a merge the antisense and sense reads
 rule merge_sense_antisense:
     input:
-        r1_r1 = 'output/matched_sense/{individual}_r1.fq',
-        r2_r1 = 'output/matched_antisense_renamed/{individual}_r1.fq',
-        r1_r2 = 'output/matched_sense/{individual}_r2.fq',
-        r2_r2 = 'output/matched_antisense_renamed/{individual}_r1.fq'
+        r1_r1 = 'output/041_matched_sense/{individual}_r1.fq',
+        r2_r1 = 'output/042_matched_antisense_renamed/{individual}_r1.fq',
+        r1_r2 = 'output/041_matched_sense/{individual}_r2.fq',
+        r2_r2 = 'output/042_matched_antisense_renamed/{individual}_r1.fq'
     output:
-        r1 = 'output/matched_merged/{individual}_r1.fq',
-        r2 = 'output/matched_merged/{individual}_r2.fq'
+        r1 = 'output/051_matched_merged/{individual}_r1.fq',
+        r2 = 'output/051_matched_merged/{individual}_r2.fq'
     threads:
         1
     script:
         'src/get_unique_reads.py'
 
-# reverse complement the antisense matches
+# 04b reverse complement the antisense matches
 rule rename_antisense_reads:
     input:
-        r1 = 'output/matched_antisense/{individual}_r1.fq',
-        r2 = 'output/matched_antisense/{individual}_r2.fq',
+        r1 = 'output/041_matched_antisense/{individual}_r1.fq',
+        r2 = 'output/041_matched_antisense/{individual}_r2.fq',
     output:
-        r1 = temp('output/matched_antisense_renamed/{individual}_r1.fq'),
-        r2 = temp('output/matched_antisense_renamed/{individual}_r2.fq')
+        r1 = 'output/042_matched_antisense_renamed/{individual}_r1.fq',
+        r2 = 'output/042_matched_antisense_renamed/{individual}_r2.fq'
     threads:
         1
     script:
         'src/rename_antisense_reads.py'
 
-# match the primers
+# 04 match the primers
 rule match_sense_primers:
     input:
-        r1 = 'output/matched_head/{individual}_r1.fq',
-        r2 = 'output/matched_head/{individual}_r2.fq'
+        r1 = 'output/03_matched_head/{individual}_r1.fq',
+        r2 = 'output/03_matched_head/{individual}_r2.fq'
     output:
-        r1 = temp('output/matched_sense/{individual}_r1.fq'),
-        r2 = temp('output/matched_sense/{individual}_r2.fq')
+        r1 = 'output/041_matched_sense/{individual}_r1.fq',
+        r2 = 'output/041_matched_sense/{individual}_r2.fq'
     params:
-        r1d = 'output/matched_sense/{individual}_r1.fq.discards',
-        r2d = 'output/matched_sense/{individual}_r2.fq.discards'
+        r1d = 'output/041_matched_sense/{individual}_r1.fq.discards',
+        r2d = 'output/041_matched_sense/{individual}_r2.fq.discards'
     threads:
         1
     log:
@@ -279,14 +279,14 @@ rule match_sense_primers:
 
 rule match_antisense_primers:
     input:
-        r1 = 'output/matched_head/{individual}_r1.fq',
-        r2 = 'output/matched_head/{individual}_r2.fq'
+        r1 = 'output/03_matched_head/{individual}_r1.fq',
+        r2 = 'output/03_matched_head/{individual}_r2.fq'
     output:
-        r1 = temp('output/matched_antisense/{individual}_r1.fq'),
-        r2 = temp('output/matched_antisense/{individual}_r2.fq')
+        r1 = 'output/041_matched_antisense/{individual}_r1.fq',
+        r2 = 'output/041_matched_antisense/{individual}_r2.fq'
     params:
-        r1d = 'output/matched_antisense/{individual}_r1.fq.discards',
-        r2d = 'output/matched_antisense/{individual}_r2.fq.discards'
+        r1d = 'output/041_matched_antisense/{individual}_r1.fq.discards',
+        r2d = 'output/041_matched_antisense/{individual}_r2.fq.discards'
     threads:
         1
     log:
@@ -306,17 +306,17 @@ rule match_antisense_primers:
         '{input.r1} {input.r2} '
         '&> {log}'
 
-# match the HEAD sequence
+# 03 match the HEAD sequence
 rule match_head:
     input:
-        r1 = 'output/demuxed_merged/{individual}_r1.fq',
-        r2 = 'output/demuxed_merged/{individual}_r2.fq'
+        r1 = 'output/022_demuxed_merged/{individual}_r1.fq',
+        r2 = 'output/022_demuxed_merged/{individual}_r2.fq'
     output:
-        r1 = temp('output/matched_head/{individual}_r1.fq'),
-        r2 = temp('output/matched_head/{individual}_r2.fq')
+        r1 = 'output/03_matched_head/{individual}_r1.fq',
+        r2 = 'output/03_matched_head/{individual}_r2.fq'
     params:
-        r1d = 'output/matched_head/{individual}_r1.fq.discards',
-        r2d = 'output/matched_head/{individual}_r2.fq.discards'
+        r1d = 'output/03_matched_head/{individual}_r1.fq.discards',
+        r2d = 'output/03_matched_head/{individual}_r2.fq.discards'
     threads:
         1
     log:
@@ -336,31 +336,31 @@ rule match_head:
         '{input.r1} {input.r2} '
         '&> {log}'
 
-# merge and sort cudatapt output
+# 02b merge and sort cudatapt output
 rule merge_demuxed_reads:
     input:
-        r1_r1 = 'output/cutadapt_demux_r1/{individual}_r1.fq',
-        r2_r1 = 'output/cutadapt_demux_r2/{individual}_r1.fq',
-        r1_r2 = 'output/cutadapt_demux_r1/{individual}_r2.fq',
-        r2_r2 = 'output/cutadapt_demux_r2/{individual}_r2.fq'
+        r1_r1 = 'output/021_cutadapt_demux_r1/{individual}_r1.fq',
+        r2_r1 = 'output/021_cutadapt_demux_r2/{individual}_r1.fq',
+        r1_r2 = 'output/021_cutadapt_demux_r1/{individual}_r2.fq',
+        r2_r2 = 'output/021_cutadapt_demux_r2/{individual}_r2.fq'
     output:
-        r1 = temp('output/demuxed_merged/{individual}_r1.fq'),
-        r2 = temp('output/demuxed_merged/{individual}_r2.fq')
+        r1 = 'output/022_demuxed_merged/{individual}_r1.fq',
+        r2 = 'output/022_demuxed_merged/{individual}_r2.fq'
     threads:
         1
     script:
         'src/get_unique_reads.py'
 
 
-# demux with cutadapt
+# 02 demux with cutadapt
 rule demux_r1:
     input:
-        key = 'output/config_files/cutadapt_barcodes.fasta',
-        r1 = 'output/raw_reads/r1.fq',
-        r2 = 'output/raw_reads/r2.fq'
+        key = 'output/01_config_files/cutadapt_barcodes.fasta',
+        r1 = 'output/01_raw_reads/r1.fq',
+        r2 = 'output/01_raw_reads/r2.fq'
     output:
-        dynamic('output/cutadapt_demux_r1/{individual}_r1.fq'),
-        dynamic('output/cutadapt_demux_r1/{individual}_r2.fq')
+        dynamic('output/021_cutadapt_demux_r1/{individual}_r1.fq'),
+        dynamic('output/021_cutadapt_demux_r1/{individual}_r2.fq')
     log:
         'output/logs/cutadapt_demux_r1.log'
     threads:
@@ -373,23 +373,23 @@ rule demux_r1:
         '--no-trim '
         '--max-n=0 '
         '--pair-filter=any '
-        '-o output/cutadapt_demux_r1/{{name}}_r1.fq '
-        '-p output/cutadapt_demux_r1/{{name}}_r2.fq '
+        '-o output/021_cutadapt_demux_r1/{{name}}_r1.fq '
+        '-p output/021_cutadapt_demux_r1/{{name}}_r2.fq '
         '--untrimmed-output='
-        'output/cutadapt_demux_r1/untrimmed_r1.fq.discards '
+        'output/021_cutadapt_demux_r1/untrimmed_r1.fq.discards '
         '--untrimmed-paired-output='
-        'output/cutadapt_demux_r1/untrimmed_r2.fq.discards '
+        'output/021_cutadapt_demux_r1/untrimmed_r2.fq.discards '
         '{input.r1} {input.r2} '
         '&> {log}'
 
 rule demux_r2:
     input:
-        key = 'output/config_files/cutadapt_barcodes.fasta',
-        r1 = 'output/raw_reads/r1.fq',
-        r2 = 'output/raw_reads/r2.fq'
+        key = 'output/01_config_files/cutadapt_barcodes.fasta',
+        r1 = 'output/01_raw_reads/r1.fq',
+        r2 = 'output/01_raw_reads/r2.fq'
     output:
-        dynamic('output/cutadapt_demux_r2/{individual}_r1.fq'),
-        dynamic('output/cutadapt_demux_r2/{individual}_r2.fq')
+        dynamic('output/021_cutadapt_demux_r2/{individual}_r1.fq'),
+        dynamic('output/021_cutadapt_demux_r2/{individual}_r2.fq')
     log:
         'output/logs/cutadapt_demux_r2.log'
     threads:
@@ -402,29 +402,29 @@ rule demux_r2:
         '--no-trim '                # ONLY FOR TESTING
         '--max-n=0 '
         '--pair-filter=any '
-        '-o output/cutadapt_demux_r2/{{name}}_r2.fq '
-        '-p output/cutadapt_demux_r2/{{name}}_r1.fq '
+        '-o output/021_cutadapt_demux_r2/{{name}}_r2.fq '
+        '-p output/021_cutadapt_demux_r2/{{name}}_r1.fq '
         '--untrimmed-output='
-        'output/cutadapt_demux_r2/untrimmed_r2.fq.discards '
+        'output/021_cutadapt_demux_r2/untrimmed_r2.fq.discards '
         '--untrimmed-paired-output='
-        'output/cutadapt_demux_r2/untrimmed_r1.fq.discards '
+        'output/021_cutadapt_demux_r2/untrimmed_r1.fq.discards '
         '{input.r2} {input.r1} '
         '&> {log}'
 
 
-# expand the reads to avoid pigz
+# 01b expand the reads to avoid pigz
 rule zcat:
     input:
         'data/DDP02116-W/TH1_{r}.fq.gz'
     output:
-        temp('output/raw_reads/r{r}.fq')
+        temp('output/01_raw_reads/r{r}.fq')
     threads:
         1
     shell:
         'zcat {input} > {output}'
 
 
-# generate a key file for demuxing
+# 01a generate a key file for demuxing
 rule generate_demux_key:
     input:
         barcodes_file = barcodes_file,
@@ -432,6 +432,6 @@ rule generate_demux_key:
     threads:
         1
     output:
-        key = 'output/config_files/cutadapt_barcodes.fasta'
+        key = 'output/01_config_files/cutadapt_barcodes.fasta'
     script:
         'src/generate_demux_key.R'
