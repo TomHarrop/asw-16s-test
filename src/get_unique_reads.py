@@ -35,9 +35,11 @@ r2_unique = get_unique_reads(r1_r2, r2_r2)
 
 key_order = sorted(r1_unique.keys())
 
-SeqIO.write((r1_unique[x] for x in key_order),
+SeqIO.write(
+    (r1_unique[x] for x in key_order),
     r1_out,
     'fastq-sanger')
-SeqIO.write((r2_unique[x] for x in key_order),
+SeqIO.write(
+    (r2_unique[x] for x in key_order),
     r2_out,
     'fastq-sanger')

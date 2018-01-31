@@ -12,11 +12,12 @@ from Bio import SeqRecord
 
 # secrecord constructor
 def create_contig(read_id, fwd_reads, rev_reads):
+    return fwd_reads[read_id].seq
     # my_spacer = Seq.Seq("N" * 205)
-    my_spacer = Seq.Seq('')
-    my_fwd_read = fwd_reads[read_id].seq
-    my_rev_read = rev_reads[read_id].reverse_complement().seq
-    return my_fwd_read + my_spacer + my_rev_read
+    # my_spacer = Seq.Seq('')
+    # my_fwd_read = fwd_reads[read_id].seq
+    # my_rev_read = rev_reads[read_id].reverse_complement().seq
+    # return my_fwd_read + my_spacer + my_rev_read
 
 
 ###########
