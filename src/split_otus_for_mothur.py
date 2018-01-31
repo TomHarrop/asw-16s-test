@@ -7,16 +7,18 @@ from Bio import SeqRecord
 # This is quick and dirty. Split at 210 b because that's what I did during
 # demuxing. Would be cleaner to take the ID and get the original reads
 
+
 #############
 # FUNCTIONS #
 #############
 
 # read splitter
 def split_read(record, split_at):
-    my_spacer = Seq.Seq("N" * 205)
-    my_prefix = record[:split_at]
-    my_suffix = record[split_at:]
-    return my_prefix + my_spacer + my_suffix
+    return record
+    # my_spacer = Seq.Seq("N" * 205)
+    # my_prefix = record[:split_at]
+    # my_suffix = record[split_at:]
+    # return my_prefix + my_spacer + my_suffix
 
 ###########
 # GLOBALS #
