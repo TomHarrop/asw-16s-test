@@ -20,9 +20,9 @@ output_names = snakemake.output['names']
 output_fasta = snakemake.output['fasta']
 long_table_file = snakemake.output['long_table']
 
-# mothur_names = 'output/dereplicate/all.names'
-# swarm_results = 'output/swarm/all.unique.swarm'
-# dereplicated_fasta = 'output/dereplicate/all.unique.fasta'
+# mothur_names = 'output/06_dereplicate/all.names'
+# swarm_results = 'output/07_swarm/all.unique.swarm'
+# dereplicated_fasta = 'output/06_dereplicate/all.unique.fasta'
 
 # generate a dict of names from the mothur namefile
 with open(mothur_names, 'rt') as mothur:
@@ -35,7 +35,7 @@ with open(swarm_results, 'rt') as swarm:
 
 # keep the swarm results with more than 10 representatives
 kept_swarms = {x[0]: x for x in readlists
-               if len(x) > 9}
+               if len(x) > 0}
 
 # remove the trailing number of reads from the header and the read list
 renamed_swarms = {}

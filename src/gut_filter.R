@@ -9,6 +9,9 @@ count_table_file <- snakemake@output[["count_table"]]
 abundance_table_file <- snakemake@output[["abundance_table"]]
 filter_file <- snakemake@output[["filter_file"]]
 
+# dev
+precluster_names <- "output/081_swarm_reformatted/long_table.tab"
+
 # generate a sample name from each read
 read_names <- fread(precluster_names)
 read_names[, read_sample_name := gsub("\\|.+$", "", read_name)]

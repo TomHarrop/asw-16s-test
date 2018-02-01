@@ -45,7 +45,7 @@ rule annotate_otus:
     log:
         'output/logs/mothur_annotate-otus.log'
     threads:
-        16
+        20
     shell:
         'bash -c \''
         'cd {params.wd} || exit 1 ; '
@@ -120,13 +120,15 @@ rule swarm:
     output:
         'output/07_swarm/all.unique.swarm'
     threads:
-        8
+        20
     log:
         'output/logs/swarm.log'
     shell:
         'swarm '
         '-t {threads} '
-        '--fastidious '
+        '-d 6 '
+        # '--fastidious '
+        # '-d 1 '
         '-l {log} '
         '-o {output} '
         '{input}'
@@ -199,13 +201,16 @@ rule truncate:
         r1 = 'output/052_truncated/{individual}_r1.fq',
         r2 = 'output/052_truncated/{individual}_r2.fq'
     threads:
-        1
+        20
     log:
         'output/logs/truncate_{individual}.log'
     shell:
         'bbduk.sh '
+        'threads={threads} '
         'in={input.r1} '
         'in2={input.r2} '
+        'qtrim=r '
+        'trimq=10 '
         'maxns=0 '
         'literal='
         'AAAAAAAAAA,'
@@ -215,8 +220,8 @@ rule truncate:
         'maskmiddle=f '
         'out={output.r1} '
         'out2={output.r2} '
-        'forcetrimright=209 '
-        'minlength=210 '
+        'forcetrimright=179 '
+        'minlength=180 '
         '2> {log}'
 
 # 05a merge the antisense and sense reads
