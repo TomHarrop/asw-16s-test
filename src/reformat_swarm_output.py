@@ -33,9 +33,9 @@ with open(mothur_names, 'rt') as mothur:
 with open(swarm_results, 'rt') as swarm:
     readlists = [str(x).rstrip('\n').split(' ') for x in swarm]
 
-# keep the swarm results with more than 10 representatives
+# discard singletons
 kept_swarms = {x[0]: x for x in readlists
-               if len(x) > 0}
+               if len(x) > 1}
 
 # remove the trailing number of reads from the header and the read list
 renamed_swarms = {}

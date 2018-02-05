@@ -32,7 +32,7 @@ rule target:
     input:
         'output/091_annotate_otus/keptotus.seed_v128.wang.taxonomy'
 
-# 09 put Ns in the OTUs and annotate with mothur
+# 09 get kept OTUs and annotate with mothur
 rule annotate_otus:
     input:
         fasta = 'output/091_annotate_otus/keptotus.fasta'
@@ -56,15 +56,21 @@ rule annotate_otus:
         'processors={threads})" '
         '\' &> {log}'
 
-rule insert_ns:
+rule get_kept_otus:
     input:
-        fasta = 'output/082_gutfilter/keptotus.fasta'
+        kept_otus = 'output/082_gutfilter/kept_otus.txt',
+        fasta = 'output/054_joined_reads_with_spacer/all.fasta'
     output:
         fasta = 'output/091_annotate_otus/keptotus.fasta'
     threads:
         1
-    script:
-        'src/split_otus_for_mothur.py'  
+    shell:
+        'filterbyname.sh '
+        'in={input.fasta} '
+        'out={output} '
+        'names={input.kept_otus} '
+        'include=t '
+        '2> {log}'
 
 # 082 run gutfilter and extract reads
 rule gutfilter_reads:
@@ -177,6 +183,16 @@ rule join_reads:
     shell:
         'cat {input} > {output}'
 
+rule join_spaced_reads:
+    input:
+        dynamic('output/053_renamed_contigs_with_spacer/'
+                '{individual}.fa')
+    output:
+        'output/054_joined_reads_with_spacer/all.fasta'
+    shell:
+        'cat {input} > {output}'
+
+
 # 053 make contigs and rename reads
 rule contig_and_rename:
     input:
@@ -184,6 +200,8 @@ rule contig_and_rename:
         r2 = 'output/052_truncated/{individual}_r2.fq'        
     output:
         fa = 'output/053_renamed_contigs/{individual}.fa',
+        spaced_fa = ('output/053_renamed_contigs_with_spacer/'
+                     '{individual}.fa'),
         key = 'output/053_renamed_contigs/{individual}_readkey.txt'
     params:
         individual = '{individual}'
@@ -210,7 +228,7 @@ rule truncate:
         'in={input.r1} '
         'in2={input.r2} '
         'qtrim=r '
-        'trimq=10 '
+        'trimq=15 '
         'maxns=0 '
         'literal='
         'AAAAAAAAAA,'
@@ -220,8 +238,8 @@ rule truncate:
         'maskmiddle=f '
         'out={output.r1} '
         'out2={output.r2} '
-        'forcetrimright=179 '
-        'minlength=180 '
+        'forcetrimright=186 '
+        'minlength=187 '
         '2> {log}'
 
 # 05a merge the antisense and sense reads

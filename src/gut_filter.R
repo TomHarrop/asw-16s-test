@@ -10,7 +10,7 @@ abundance_table_file <- snakemake@output[["abundance_table"]]
 filter_file <- snakemake@output[["filter_file"]]
 
 # dev
-precluster_names <- "output/081_swarm_reformatted/long_table.tab"
+# precluster_names <- "output/081_swarm_reformatted/long_table.tab"
 
 # generate a sample name from each read
 read_names <- fread(precluster_names)
@@ -65,6 +65,11 @@ totals[, pass_any_filter :=
            sum(pass_community_thr, pass_2pc_thr, pass_5pc_thr) > 0,
        by = otu_id]
 kept_otus <- totals[pass_any_filter == TRUE, unique(otu_id)]
+
+# dev
+# totals[, unique(pass_community_thr), by = otu_id][, sum(V1)]
+# totals[, unique(pass_2pc_thr), by = otu_id][, sum(V1)]
+# totals[, unique(pass_5pc_thr), by = otu_id][, sum(V1)]
 
 # generate count and abundance tables
 filtered_totals <- totals[otu_id %in% kept_otus]

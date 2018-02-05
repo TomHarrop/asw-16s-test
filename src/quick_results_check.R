@@ -6,8 +6,8 @@ library(ggplot2)
 library(phyloseq)
 
 # files
-count_file <- "output/gutfilter/count_table.txt"
-taxonomy_file <- "output/annotate_otus/keptotus.seed_v128.wang.taxonomy"
+count_file <- "output/082_gutfilter/count_table.txt"
+taxonomy_file <- "output/091_annotate_otus/keptotus.seed_v128.wang.taxonomy"
 
 # generate OTU table
 count_table <- fread(count_file)
@@ -54,8 +54,11 @@ res_wald <- results(dds_wald,
                     lfcThreshold = log(1.5, 2))
 subset(res_wald, padj < 0.1)
 res_wald[order(res_wald$padj), ]
-tax['Lincoln_17|3638']
-plotCounts(dds_wald, "Lincoln_17|3638", intgroup = "population")
+
+tax[rownames(subset(res_wald, padj < 0.1))]
+
+tax['Invermay_14|68']
+plotCounts(dds_wald, "Invermay_14|68", intgroup = "population")
 
 # run a likelihood ratio test on the populations
 dds <- DESeq(dds, test = "LRT", reduced = ~ 1, fitType = "local")
@@ -90,4 +93,52 @@ plot(sn_hc)
 
 
 dist_mat <- distance(physeq, method = "wunifrac")
+
+
+
+counts_wide <- counts(dds, normalized = TRUE)
+norm_counts <- melt(data.table(counts_wide, keep.rownames = TRUE),
+                    id = 'rn',
+                    variable.name = "Sample",
+                    value.name = "normalized_counts")
+setnames(norm_counts, "rn", "OTU")
+
+norm_counts_tax <- merge(norm_counts,
+                         taxonomy_by_otu,
+                         by.x = "OTU",
+                         by.y = "otu_id",
+                         all.x = TRUE)
+
+norm_counts_by_genus <- norm_counts_tax[, .(total_reads = sum(normalized_counts,
+                                                              na.rm = TRUE)),
+                                        by = .(Sample, Genus, Phylum)]
+norm_counts_by_genus[, sum_by_genus := sum(total_reads), by = Genus]
+norm_counts_by_genus[, sum_by_sample := sum(total_reads), by = Sample]
+norm_counts_by_genus[, pct_reads := total_reads * 100 / sum_by_sample]
+setorder(norm_counts_by_genus, Phylum, -sum_by_genus)
+norm_counts_by_genus[, Genus := factor(Genus, levels = unique(Genus))]
+
+plot_genus <- norm_counts_by_genus[!grepl("unclassified", Genus),
+                                   any(total_reads > 10),
+                                   by = Genus][
+                                       V1 == TRUE, unique(Genus)]
+plot_otu <- norm_counts_tax[Genus %in% as.character(plot_genus), unique(OTU)]
+
+bp_pd <- norm_counts_by_genus[Genus %in% plot_genus]
+
+gp <- ggplot(bp_pd[total_reads > 0],
+             aes(x = Genus, y = total_reads, fill = Phylum)) +
+    theme_minimal(base_size = 12) +
+    #scale_fill_brewer(palette = "Set1") +
+    scale_y_log10(breaks = trans_breaks("log10", function(x) 10^x),
+                  labels = trans_format("log10", math_format(10^.x))) +
+    
+    theme(axis.text.x = element_text(angle = 45,
+                                     vjust = 1,
+                                     hjust = 1),
+          strip.background = element_blank(),
+          strip.text.x = element_blank()) +
+    ylab("Abundance") +
+    facet_grid(Sample ~ Phylum, scales = "free_x", space = "free_x") +
+    geom_col(position = "dodge", width = 0.5, size = 0.5)
 
