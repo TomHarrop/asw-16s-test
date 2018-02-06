@@ -62,23 +62,6 @@ rule get_kept_otus:
         fasta = 'output/054_joined_reads_with_spacer/all.fasta'
     output:
         fasta = 'output/091_annotate_otus/keptotus.fasta'
-    threads:
-        1
-    shell:
-        'filterbyname.sh '
-        'in={input.fasta} '
-        'out={output} '
-        'names={input.kept_otus} '
-        'include=t '
-        '2> {log}'
-
-# 082 run gutfilter and extract reads
-rule gutfilter_reads:
-    input:
-        kept_otus = 'output/082_gutfilter/kept_otus.txt',
-        fasta = 'output/081_swarm_reformatted/precluster.fasta'
-    output:
-        'output/082_gutfilter/keptotus.fasta'
     log:
         'output/logs/filterbyname.log'
     threads:
@@ -91,6 +74,7 @@ rule gutfilter_reads:
         'include=t '
         '2> {log}'
 
+# 082 run gutfilter and extract reads
 rule gutfilter:
     input:
         precluster_names = 'output/081_swarm_reformatted/long_table.tab'

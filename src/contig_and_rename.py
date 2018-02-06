@@ -54,6 +54,7 @@ id_to_key = {y: x for x, y in enumerate(r1_reads.keys())}
 # generate records
 spaced_records = []
 unspaced_records = []
+output_ids = {}
 for rec_id in id_to_key.keys():
     my_contigs = create_contig(rec_id, r1_reads, r2_reads)
     my_rec_no = id_to_key[rec_id] + 1
@@ -62,10 +63,12 @@ for rec_id in id_to_key.keys():
         seqrec_wrapper(my_contigs['with_spacer'], my_id))
     unspaced_records.append(
         seqrec_wrapper(my_contigs['no_spacer'], my_id))
+    output_ids[rec_id] = my_id
 
 # write output
 SeqIO.write(spaced_records, spaced_fa_out, 'fasta')
 SeqIO.write(unspaced_records, fa_out, 'fasta')
 with open(out_key, 'wt') as f:
-    my_writer = csv.writer(f)
-    my_writer.writerows(id_to_key.items())
+    my_writer = csv.writer(f, fieldnames=['read_id', 'read_name'])
+    my_writer.writeheader()
+    my_writer.writerows(output_ids.items())
