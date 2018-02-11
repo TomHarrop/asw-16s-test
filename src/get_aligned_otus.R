@@ -1,0 +1,53 @@
+#!/usr/bin/env Rscript
+
+library(data.table)
+library(ggplot2)
+
+###########
+# GLOBALS #
+###########
+
+align_report_file <- "output/100_tree/keptotus.align.report"
+
+########
+# MAIN #
+########
+
+# read table
+align_report <- fread(align_report_file)
+
+# calculate cutoffs
+minstart <- align_report[, quantile(TemplateStart, 0.05)]
+maxend <- align_report[, quantile(TemplateEnd, 0.95)]
+xl <- c(
+    align_report[, quantile(TemplateStart, 0.01)],
+    align_report[, quantile(TemplateEnd, 0.99)]
+)
+
+# extract read names
+aligned_reads <- align_report[TemplateStart >= minstart &
+                                  TemplateEnd <= maxend,
+                              .(unique(QueryName))]
+
+# plot distributions
+pd <- melt(align_report,
+           id.vars = "QueryName",
+           measure.vars = c("TemplateStart", "TemplateEnd"))
+
+gt <- paste(dim(aligned_reads)[1],
+      "OTUs aligned between template position",
+      round(minstart, 0),
+      "and",
+      round(maxend, 0))
+
+gp <- ggplot(pd, aes(x = value)) +
+    ggtitle(gt) +
+    xlab("Template position") + ylab("Count") +
+    xlim(xl) +
+    geom_vline(xintercept = c(minstart - 1, maxend + 1)) +
+    facet_grid(variable ~ .) +
+    geom_histogram(bins = 200)
+
+# write output
+
+

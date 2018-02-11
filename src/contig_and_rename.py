@@ -69,6 +69,6 @@ for rec_id in id_to_key.keys():
 SeqIO.write(spaced_records, spaced_fa_out, 'fasta')
 SeqIO.write(unspaced_records, fa_out, 'fasta')
 with open(out_key, 'wt') as f:
-    my_writer = csv.writer(f, fieldnames=['read_id', 'read_name'])
-    my_writer.writeheader()
+    my_writer = csv.writer(f)
+    my_writer.writerow(['read_id', 'contig_name'])
     my_writer.writerows(output_ids.items())

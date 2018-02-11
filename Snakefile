@@ -20,8 +20,8 @@ barcodes_file = 'data/bc_5nt_with_spacer.fasta'
 key_file = 'data/barcodes.csv'
 r1 = 'data/DDP02116-W/TH1_1.fq.gz'
 r2 = 'data/DDP02116-W/TH1_2.fq.gz'
-silva_align = pathlib.Path('data/silva/silva.seed_v128.align').resolve()
-silva_tax = pathlib.Path('data/silva/silva.seed_v128.tax').resolve()
+silva_align = pathlib.Path('data/silva/silva.seed_v132.align').resolve()
+silva_tax = pathlib.Path('data/silva/silva.seed_v132.tax').resolve()
 
 
 #########
@@ -30,14 +30,47 @@ silva_tax = pathlib.Path('data/silva/silva.seed_v128.tax').resolve()
 
 rule target:
     input:
-        'output/091_annotate_otus/keptotus.seed_v128.wang.taxonomy'
+        'output/100_tree/keptotus.phylip.tre'
 
+# 10 create a tree
+rule mothur_tree:
+    input:
+        fasta = 'output/091_annotate_otus/keptotus.fasta',
+        tax = 'output/091_annotate_otus/keptotus.seed_v132.wang.taxonomy'
+    output:
+        fasta = temp('output/100_tree/keptotus.fasta'),
+        tax = temp('output/100_tree/keptotus.seed_v132.wang.taxonomy'),
+        tree = 'output/100_tree/keptotus.phylip.tre'
+    params:
+        wd = 'output/100_tree'
+    threads:
+        20
+    log:
+        'output/logs/mothur_tree.log'
+    shell:
+        'cp {input.fasta} {output.fasta} ; '
+        'cp {input.tax} {output.tax} ; '
+        'bash -c \''
+        'cd {params.wd} || exit 1 ; '
+        'mothur "'
+        '#align.seqs(candidate=keptotus.fasta, '
+        'template={silva_align}, '
+        'processors={threads}, '
+        'flip=t)" ; '
+        'mothur "#dist.seqs(fasta=keptotus.align, output=lt)" ; '
+        'mothur "#tree.shared(phylip=keptotus.phylip.dist)" ; '
+        'mothur "#clearcut(phylip=keptotus.phylip.dist)" ; '
+        'mothur "#classify.tree(taxonomy=keptotus.seed_v132.wang.taxonomy, '
+        'tree=keptotus.phylip.tre)" '
+        '\' &> {log} '
+
+# TODO align and only keep matches from 25293 to 41790 to eliminate weird reads
 # 09 get kept OTUs and annotate with mothur
 rule annotate_otus:
     input:
         fasta = 'output/091_annotate_otus/keptotus.fasta'
     output:
-        tax = 'output/091_annotate_otus/keptotus.seed_v128.wang.taxonomy'
+        tax = 'output/091_annotate_otus/keptotus.seed_v132.wang.taxonomy'
     params:
         wd = 'output/091_annotate_otus',
         align = silva_align,
@@ -55,6 +88,29 @@ rule annotate_otus:
         'taxonomy={params.tax}, '
         'processors={threads})" '
         '\' &> {log}'
+
+
+rule align_otus:
+    input:
+        fasta = 'output/091_annotate_otus/keptotus.fasta'
+    output:
+        align = 'output/091_annotate_otus/keptotus.align'
+    params:
+        wd = 'output/091_annotate_otus',
+        align = silva_align,
+        tax = silva_tax
+    log:
+        'output/logs/mothur_align.log'
+    shell:
+        'bash -c \''
+        'cd {params.wd} || exit 1 ; '
+        'mothur "'
+        '#align.seqs(candidate=keptotus.fasta, '
+        'template={silva_align}, '
+        'processors={threads}, '
+        'flip=f)" '
+        '\' &> {log} '
+
 
 rule get_kept_otus:
     input:
