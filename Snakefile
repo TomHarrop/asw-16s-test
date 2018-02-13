@@ -30,17 +30,19 @@ silva_tax = pathlib.Path('data/silva/silva.seed_v132.tax').resolve()
 
 rule target:
     input:
-        'output/100_tree/keptotus.phylip.tre'
+        'output/100_tree/aligned_otus.phylip.tre'
 
 # 10 create a tree
 rule mothur_tree:
     input:
-        fasta = 'output/091_annotate_otus/keptotus.fasta',
-        tax = 'output/091_annotate_otus/keptotus.seed_v132.wang.taxonomy'
+        fasta = 'output/091_annotate_otus/aligned_otus.fasta',
+        tax = 'output/091_annotate_otus/aligned_otus.seed_v132.wang.taxonomy',
+        align = 'output/091_annotate_otus/keptotus.align'
     output:
-        fasta = temp('output/100_tree/keptotus.fasta'),
-        tax = temp('output/100_tree/keptotus.seed_v132.wang.taxonomy'),
-        tree = 'output/100_tree/keptotus.phylip.tre'
+        fasta = temp('output/100_tree/aligned_otus.fasta'),
+        tax = temp('output/100_tree/aligned_otus.seed_v132.wang.taxonomy'),
+        align = temp('output/100_tree/aligned_otus.align'),
+        tree = 'output/100_tree/aligned_otus.phylip.tre'
     params:
         wd = 'output/100_tree'
     threads:
@@ -50,27 +52,23 @@ rule mothur_tree:
     shell:
         'cp {input.fasta} {output.fasta} ; '
         'cp {input.tax} {output.tax} ; '
+        'cp {input.align} {output.align} ; '
         'bash -c \''
         'cd {params.wd} || exit 1 ; '
-        'mothur "'
-        '#align.seqs(candidate=keptotus.fasta, '
-        'template={silva_align}, '
-        'processors={threads}, '
-        'flip=t)" ; '
-        'mothur "#dist.seqs(fasta=keptotus.align, output=lt)" ; '
-        'mothur "#tree.shared(phylip=keptotus.phylip.dist)" ; '
-        'mothur "#clearcut(phylip=keptotus.phylip.dist)" ; '
-        'mothur "#classify.tree(taxonomy=keptotus.seed_v132.wang.taxonomy, '
-        'tree=keptotus.phylip.tre)" '
+        'mothur "#dist.seqs(fasta=aligned_otus.align, output=lt)" ; '
+        'mothur "#tree.shared(phylip=aligned_otus.phylip.dist)" ; '
+        'mothur "#clearcut(phylip=aligned_otus.phylip.dist)" ; '
+        'mothur "#classify.tree(taxonomy=aligned_otus.seed_v132.wang.taxonomy, '
+        'tree=aligned_otus.phylip.tre)" '
         '\' &> {log} '
 
 # TODO align and only keep matches from 25293 to 41790 to eliminate weird reads
 # 09 get kept OTUs and annotate with mothur
 rule annotate_otus:
     input:
-        fasta = 'output/091_annotate_otus/keptotus.fasta'
+        fasta = 'output/091_annotate_otus/aligned_otus.fasta'
     output:
-        tax = 'output/091_annotate_otus/keptotus.seed_v132.wang.taxonomy'
+        tax = 'output/091_annotate_otus/aligned_otus.seed_v132.wang.taxonomy'
     params:
         wd = 'output/091_annotate_otus',
         align = silva_align,
@@ -83,22 +81,56 @@ rule annotate_otus:
         'bash -c \''
         'cd {params.wd} || exit 1 ; '
         'mothur "'
-        '#classify.seqs(fasta=keptotus.fasta, '
+        '#classify.seqs(fasta=aligned_otus.fasta, '
         'template={params.align}, '
         'taxonomy={params.tax}, '
         'processors={threads})" '
         '\' &> {log}'
 
 
+rule subset_aligned_otus:
+    input:
+        aligned_otus = 'output/091_annotate_otus/aligned_otus.txt',
+        fasta = 'output/054_joined_reads_with_spacer/all.fasta'
+    output:
+        fasta = 'output/091_annotate_otus/aligned_otus.fasta'
+    log:
+        'output/logs/filterbyname_aligned_otus.log'
+    threads:
+        1
+    shell:
+        'filterbyname.sh '
+        'in={input.fasta} '
+        'out={output} '
+        'names={input.aligned_otus} '
+        'include=t '
+        '2> {log}'
+
+rule get_aligned_otus:
+    input:
+        report = 'output/091_annotate_otus/keptotus.align.report'
+    output:
+        aligned_otus = 'output/091_annotate_otus/aligned_otus.txt',
+        plot_file = 'output/091_annotate_otus/alignment_position.pdf'
+    threads:
+        1
+    log:
+        log = 'output/logs/get_aligned_otus.log'
+    script:
+        'src/get_aligned_otus.R'
+   
 rule align_otus:
     input:
         fasta = 'output/091_annotate_otus/keptotus.fasta'
     output:
-        align = 'output/091_annotate_otus/keptotus.align'
+        align = 'output/091_annotate_otus/keptotus.align',
+        report = 'output/091_annotate_otus/keptotus.align.report'
     params:
         wd = 'output/091_annotate_otus',
         align = silva_align,
         tax = silva_tax
+    threads:
+        20
     log:
         'output/logs/mothur_align.log'
     shell:
@@ -431,8 +463,8 @@ rule demux_r1:
     shell:
         'cutadapt '
         '-g file:{input.key} '
-        '--error-rate=0 '
-        '--no-indels '
+        # '--error-rate=0 '
+        # '--no-indels '
         '--no-trim '
         '--max-n=0 '
         '--pair-filter=any '
@@ -460,9 +492,9 @@ rule demux_r2:
     shell:
         'cutadapt '
         '-g file:{input.key} '
-        '--error-rate=0 '
-        '--no-indels '
-        '--no-trim '                # ONLY FOR TESTING
+        # '--error-rate=0 '
+        # '--no-indels '
+        '--no-trim '
         '--max-n=0 '
         '--pair-filter=any '
         '-o output/021_cutadapt_demux_r2/{{name}}_r2.fq '
@@ -474,7 +506,6 @@ rule demux_r2:
         '{input.r2} {input.r1} '
         '&> {log}'
 
-
 # 01b expand the reads to avoid pigz
 rule zcat:
     input:
@@ -485,7 +516,6 @@ rule zcat:
         1
     shell:
         'zcat {input} > {output}'
-
 
 # 01a generate a key file for demuxing
 rule generate_demux_key:

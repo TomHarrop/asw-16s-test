@@ -7,11 +7,24 @@ library(ggplot2)
 # GLOBALS #
 ###########
 
-align_report_file <- "output/100_tree/keptotus.align.report"
+align_report_file <- snakemake@input[["report"]]
+aligned_otu_file <- snakemake@output[["aligned_otus"]]
+plot_file <- snakemake@output[["plot_file"]]
+log_file <- snakemake@log[["log"]]
+
+# dev
+# align_report_file <- "output/091_annotate_otus/keptotus.align.report"
+# aligned_otu_file <- "test_otus.txt"
+# plot_file <- "test.pdf"
 
 ########
 # MAIN #
 ########
+
+# set log
+log <- file(log_file, open = "wt")
+sink(log, type = "message")
+sink(log, append = TRUE, type = "output")
 
 # read table
 align_report <- fread(align_report_file)
@@ -49,5 +62,14 @@ gp <- ggplot(pd, aes(x = value)) +
     geom_histogram(bins = 200)
 
 # write output
+fwrite(aligned_reads,
+       aligned_otu_file)
 
+ggsave(filename = plot_file,
+       plot = gp,
+       width = 10,
+       height = 7.5,
+       units = "in")
 
+# write session info
+sessionInfo()

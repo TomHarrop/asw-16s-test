@@ -8,8 +8,8 @@ library(scales)
 
 # files
 count_file <- "output/082_gutfilter/count_table.txt"
-taxonomy_file <- "output/091_annotate_otus/keptotus.seed_v128.wang.taxonomy"
-tree_file <- "output/100_tree/keptotus.phylip.taxonomy.tre"
+taxonomy_file <- "output/091_annotate_otus/aligned_otus.seed_v132.wang.taxonomy"
+tree_file <- "output/100_tree/aligned_otus.phylip.tre"
 
 # generate OTU table
 count_table <- fread(count_file)
@@ -66,9 +66,9 @@ res_wald[order(res_wald$padj), ]
 
 tax[rownames(subset(res_wald, padj < 0.05))]
 
-tax['Invermay_15|24']
+tax['Invermay_15|17']
 tax['Invermay_15|2']
-plotCounts(dds_wald, "Invermay_15|24", intgroup = "population")
+plotCounts(dds_wald, "Invermay_15|17", intgroup = "population")
 
 # run a likelihood ratio test on the populations
 dds <- DESeq(dds, test = "LRT", reduced = ~ 1, fitType = "local")
