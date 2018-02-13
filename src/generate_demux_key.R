@@ -59,9 +59,9 @@ sample_barcodes <- merge(
 head_seq <- "GCTATGCGCGAGCTGC"
 barcode_fasta <- sample_barcodes[, c(
     paste0(">", sample),
-    paste0("^", sequence, head_seq),
-    paste0(">", sample),
-    paste0("^N", sequence, head_seq)),
+    paste0("^", sequence, head_seq)),
+    # paste0(">", sample),
+    # paste0("^N", sequence, head_seq)),
     by = sample][, V1]
 
 # write fasta
