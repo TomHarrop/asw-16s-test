@@ -68,8 +68,8 @@ res_wald[order(res_wald$padj), ]
 tax[rownames(subset(res_wald, padj < 0.05))]
 
 tax['Invermay_11|129']
-tax['Invermay_15|2']
-plotCounts(dds_wald, "Invermay_11|129", intgroup = "population")
+tax['Invermay_17|34']
+plotCounts(dds_wald, "Invermay_17|34", intgroup = "population")
 
 # run a likelihood ratio test on the populations
 dds <- DESeq(dds, test = "LRT", reduced = ~ 1, fitType = "local")
