@@ -15,6 +15,7 @@ tree_file <- "output/100_tree/aligned_otus.phylip.tre"
 count_table <- fread(count_file)
 sdc <- count_table[, names(count_table)[sapply(.SD, is.numeric)]]
 count_table[, lapply(.SD, sum), .SDcols = sdc]
+summary(t(count_table[, lapply(.SD, sum), .SDcols = sdc]))
 count_table[, c("ASW13_1", "ASW13_2", "ASW13_3") := NULL] # try without dummy sample
 count_matrix <- as.matrix(data.frame(count_table, row.names = "otu_id"))
 otu <- otu_table(count_matrix, taxa_are_rows = TRUE)
@@ -66,9 +67,9 @@ res_wald[order(res_wald$padj), ]
 
 tax[rownames(subset(res_wald, padj < 0.05))]
 
-tax['Invermay_15|17']
+tax['Invermay_11|129']
 tax['Invermay_15|2']
-plotCounts(dds_wald, "Invermay_15|17", intgroup = "population")
+plotCounts(dds_wald, "Invermay_11|129", intgroup = "population")
 
 # run a likelihood ratio test on the populations
 dds <- DESeq(dds, test = "LRT", reduced = ~ 1, fitType = "local")

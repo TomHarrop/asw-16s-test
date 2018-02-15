@@ -58,7 +58,8 @@ rule mothur_tree:
         'mothur "#dist.seqs(fasta=aligned_otus.align, output=lt)" ; '
         'mothur "#tree.shared(phylip=aligned_otus.phylip.dist)" ; '
         'mothur "#clearcut(phylip=aligned_otus.phylip.dist)" ; '
-        'mothur "#classify.tree(taxonomy=aligned_otus.seed_v132.wang.taxonomy, '
+        'mothur "#classify.tree('
+        'taxonomy=aligned_otus.seed_v132.wang.taxonomy, '
         'tree=aligned_otus.phylip.tre)" '
         '\' &> {log} '
 
@@ -86,7 +87,6 @@ rule annotate_otus:
         'taxonomy={params.tax}, '
         'processors={threads})" '
         '\' &> {log}'
-
 
 rule subset_aligned_otus:
     input:
@@ -142,7 +142,6 @@ rule align_otus:
         'processors={threads}, '
         'flip=f)" '
         '\' &> {log} '
-
 
 rule get_kept_otus:
     input:
